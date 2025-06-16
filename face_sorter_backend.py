@@ -22,8 +22,12 @@ def format_timestamp(seconds):
     secs = int(seconds % 60)
     return f"{minutes:02d}:{secs:02d}"
 
+
 def find_person_timestamps_multi(video_path, known_people):
-    results = {name: [] for name, _ in known_people}
+    """
+    known_people: list of tuples (name, encoding, image_path)
+    """
+    results = {name: [] for name, _, _ in known_people}
     try:
         clip = VideoFileClip(video_path)
         duration = clip.duration
@@ -33,14 +37,15 @@ def find_person_timestamps_multi(video_path, known_people):
             frame_encodings = face_recognition.face_encodings(frame, face_locations)
             matched_names_this_frame = set()
             for face_enc in frame_encodings:
-                for name, known_enc in known_people:
+                for name, known_enc, _ in known_people:
                     if name in matched_names_this_frame:
                         continue
                     if face_recognition.compare_faces([known_enc], face_enc, tolerance=TOLERANCE)[0]:
                         results[name].append(round(t, 2))
                         matched_names_this_frame.add(name)
         clip.reader.close()
-        clip.audio.reader.close_proc()
+        if clip.audio:
+            clip.audio.reader.close_proc()
     except Exception as e:
         print(f"Error processing {video_path}: {e}")
 
@@ -48,17 +53,17 @@ def find_person_timestamps_multi(video_path, known_people):
         results[name] = sorted(set(results[name]))
     return results
 
+
 def scan_and_save_all(known_people, video_dir, output_dir, progress_callback=None):
     """
-    Scans videos for known people and saves merged timestamp results
-    just like your CLI script.
+    Scans videos for known people and saves merged timestamp results.
 
     If progress_callback is provided, it will be called as:
         progress_callback(current_index, total_videos, current_video_name)
     """
     video_files = [f for f in os.listdir(video_dir) if f.lower().endswith(".mp4")]
     total_videos = len(video_files)
-    all_results = {name: {} for name, _ in known_people}
+    all_results = {name: {} for name, _, _ in known_people}
 
     for idx, filename in enumerate(video_files, start=1):
         video_path = os.path.join(video_dir, filename)
@@ -69,7 +74,6 @@ def scan_and_save_all(known_people, video_dir, output_dir, progress_callback=Non
                     all_results[name][filename] = []
                 all_results[name][filename].extend(timestamps)
 
-        # Report progress for each video processed
         if progress_callback:
             progress_callback(idx, total_videos, filename)
 
