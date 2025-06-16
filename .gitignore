@@ -1,0 +1,22 @@
+# Ignore Python cache and environment
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.env
+.vscode/
+temp_frame.jpg
+
+# Ignore all files inside output and videos, but allow the folder itself
+output/*
+!output/.gitkeep
+
+videos/*
+!videos/.gitkeep
+
+# Ignore virtual environment folder (example, adjust if needed)
+venv/
+
+.DS_Store
+*.MP4
+assets/
