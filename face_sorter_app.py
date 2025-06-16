@@ -1,8 +1,15 @@
+# face_sorter_app.py
+
 import os
 import time
 import customtkinter as ctk
 from tkinter import filedialog, messagebox
 from face_sorter_backend import load_known_face, scan_and_save_all
+from PIL import Image
+import pillow_heif
+pillow_heif.register_heif_opener()
+
+
 
 ctk.set_appearance_mode("System")
 ctk.set_default_color_theme("blue")
@@ -87,17 +94,28 @@ class FaceSorterApp(ctk.CTk):
             messagebox.showerror("Input Error", "Please enter a name first.")
             return
 
-        file_path = filedialog.askopenfilename(title="Select Reference Image", filetypes=[("Image files", "*.jpg *.jpeg *.png *.heic")])
+        file_path = filedialog.askopenfilename(
+            title="Select Reference Image",
+            filetypes=[
+                ("Image files", "*.jpg *.jpeg *.png *.heic *.webp *.bmp *.tiff *.gif"),
+                ("All files", "*.*")
+            ]
+        )
         if not file_path:
             return
 
         try:
+            # No need to convert HEIC; pillow_heif handles it
+            with Image.open(file_path) as img:
+                img.verify()
+
             encoding = load_known_face(file_path)
             self.known_people.append((name, encoding))
             self.log(f"✅ Added '{name}' from {os.path.basename(file_path)}")
             self.person_name_entry.delete(0, "end")
         except Exception as e:
-            messagebox.showerror("Error", f"Failed to load face encoding:\n{e}")
+            messagebox.showerror("Error", f"Failed to load image or face encoding:\n{e}")
+
 
     def select_video_dir(self):
         folder = filedialog.askdirectory(title="Select Videos Folder")
